@@ -1,0 +1,123 @@
+* Lecture 6 - 13 marts
+
+** Assignemnts
+
+There will be questions directly related to the assignments in the exam.
+So do the assigments
+'soft' hand-in dates. but you only get feedback if you hand in by the date
+
+*** Maybe calibrate how much i loose on a virtual machine (optional)
+See how much you loose..
+
+Read file and measure performance on virtual machine and on host
+
+*** 1 Assignment 'Serilizability levels'
+
+What you should expect - what you get
+Do a graph
+
+*** 2 Assignment 'Reads and write'
+How fast can you read and write
+What can you do to tune it
+
+look at log tuning ... maybe checkpoints?
+
+Look more into the settins on your VM.. you fast can you go?
+
+*** Running experiments on only one computer
+Desribe the fraemwork, what is the system you run the experiment on.
+The server and the client is on the same machine..  (be aware that the client is also gonna use resources..)
+(maybe try to machines.. server on another machine?)
+
+
+** Dtrace (is not required, but an advantage if you can make use of it)
+
+** Log tuning
+
+How to make the database write fast to log
+
+*** What is a log
+
+Is a sequence of log-records, which may contain before and after images.
+
+Why do we need a begin-transaction
+ - To be able to see which transactions hasn't committed
+
+*** When do we write to the log
+ - When a transaction runs (undo and then redo before commit)
+ - When we steal (running out of ram)
+ - Doing a Checkpoint
+
+*** Use a dedicated disc for the logging (sequential writes)
+- If you use a RAID controller, then it might be fast anyway... cause then the RAID controller controlls when to write anyway (it buffers..)
+
+*** Group commits
+ - Increases throughput by reducing the number of writes
+ - At the cost of increased mean response time
+
+*** Tuning database writes (dirty data is written to disk)
+ IO is slow, theres different strategies for each database system.
+
+*** Tune checkpoint intervals
+ A checkpoint (partial flush of dirty pages to disk) happens at regular intervals
+
+*** Reduce the size of large update transactions
+break them up in smaller transactions -> easier to recover, dosen't overfill the log buffers
+
+
+
+
+** Exercise 2 (philipe shows exercise 2)
+db2start
+db2 connect to tuning
+more init.sql
+db2 'select count(*) from accounts'
+
+-> philipe uses 'db2' command.. controlcenter is crap.. your choice
+
+db2 -f init.sql
+python concurrent_writes.py
+
+look at the timespent
+cd timespent
+time_per_conn.sql > total_rqst_time and total_wait_time is interesting
+
+db2 -tf time_per_conn.sql
+
+vi time_per_conn.sql (he comments some of the column out..)
+
+Application_handle is connectionID
+
+-> Wait time is almost as much as the request time
+
+db2 -tf time_per_stmt.sql
+
+-> top 10 queries executed
+
+->  you have to reset the monitors... clean it... before the assignment.... howto?
+
+-> Philipe hoped that we could use dtrace to try and monitor the io's
+-> opens up a second terminal
+
+t1 -> db2 "delete from accounts"
+
+*** Monitoring the io disc activity
+
+-> All the probes on io isnt implemented, we miss the probes (i don't think he's right... ioprovider?)
+-> Idea: Recompile the kernel to get deeper info to run dtrace...
+-> What you could have been able to see was: What are the io's going into the log, what are the io's going out
+-> we use iostat instead then..
+
+t2 -> iostat 5 (so that its running)  (pipe it to a file.. etc..)
+
+t1 -> python concurrent_writes.py (wait to excecute it)
+
+-> when it runs it goes nuts... something went on.. there were a few writes.
+-> iostat dosen't tell you what its logging on (not as detailed as dtrace-- but for the assignment its good enough)
+
+*** Summarize
+-> When inserting theres no way around inserting the data.. so it IS hard on the disk (on the log,, because the actual write is asynchronous.. remember :))
+
+
+
+** Database tuning 2 (is more about a project)

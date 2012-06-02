@@ -1,0 +1,43 @@
+Lecture 13 - 8 maj
+--------------------
+
+* Data Warehouse
+
+Production system  
+
+ - OLTP (OnLine Transaction Processing)
+     (Lots of smaller transactions)
+
+ - OLA? (Analytics)
+     
+ These two demands are best done in two different copies of the same data.. modelled in different ways.
+
+ from Prod -> Data Warehouse
+
+ Different kinds of systems for the transactional and analytical processing
+ 
+ 
+** Star Schema
+
+A central fact table, and dimenisons out from that.
+Fact table has no data, but references to the different dimensions
+Youc an define a hierachy in the dimension tables.. which you can do aggregates on (ex. time, geography etc..)
+
+
+* Case: Lessons from Wall Street
+
+** Stream DB
+
+You predefine the queries, and when state comes, it always do the queries continuous..
+Use FPGA to program chips to do this, and do it continously when the data comes in
+
+In a relational db the state is in the DB, and we do queries on that - in this example we do the queries when we get the data
+
+
+** Two phase commit
+
+Is not used, because it creates a hard dependency between the systems
+You might be able to work with this if you are one admin administrating both systems
+
+
+

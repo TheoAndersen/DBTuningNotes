@@ -1,0 +1,224 @@
+* Lecture 11 - 24 April 2012
+  
+Nenna
+
+Nik (broken computer)
+
+Peter (take a break on the sofa each day.)
+
+** Assignment 1 feedback
+
+*** Describe the experimental setup
+
+What did you run the experiments on.. hardware software..
+Virtual machine setup (ram, direct io... options.)
+
+most of you have, but write a bit more about the setup
+
+*** Hypothisis - what you expect, what you observce
+
+Describe the observations at the level he expects. :S
+
+Explain more..
+
+*** Explain the phases of the graphs
+Explain why the graph changes.. 
+(ex, first goes down, then flattens, then goes a bit up, these 3 should all be explained)
+
+Why does the graph change when it does (form hypothesis ex: under/at/over capacity)
+
+If you have the time you can ex. change the hardware, to se if the graph changes
+
+*** Explain / go to one level deeper to get an exellent grade
+
+*** Am i describing all that i see
+
+*** Wierd results - try to explain them
+
+*** Exam question example
+I have this graph from doing sums and swaps, what is going on, what am i seeing
+
+
+
+
+
+** Query execution
+
+*** Sql example
+Employee (ID, name, depId, Salary)
+
+**** 1. Pairs of employees working in the same dept. no duplicate pairs.
+
+select e.Id, e1.Id from Employee e
+join Employee e1 on e1.deptId = e1.deptI1     -- self join (join with same table)
+where e.Id > e1.ID 
+
+a, b, c
+
+ab
+ac
+bc
+
+**** 2. Employees who earn more than the avt salery in their department
+
+select * from employee e
+where e.salery > (select avg(e1.salery) from employee e1 where e.deptId = e1.deptId)
+
+***** He dosen't like the "e.salery > (<subquery)" because it breaks if the subquery changes what it returnes
+
+***** This is called a Correlated Subquery
+
+*** Joe Celko (a good sql guy - written a few good books on sql)
+
+*** Query Tuning
+
+**** Query Execution Plan
+
+***** Physical operators
+
+Query Block (Select, from, where)
+
+Each block is optimized seperate
+
+Shape of the execution plan
+
+Join order (statistics matter here)
+
+Each block is turned into a tree of operations
+
+ - Sort
+ - Aggregates (max, min, avg.. group by)
+ - select
+ - project
+ - join
+   - nested loop
+   - sort-merge
+   - hash-join
+
+***** External sorting
+The sorting cannot fit into memory, so io's must be used, and the sorting must be split up
+
+cost is measured in number of page transfers
+
+Computations are done in memory,
+IO's necessary are being done to fetch the parts to sort (as little as possible)
+
+****** Simple sort algorithm
+
+If everything can be in memory:
+
+Read, sort in memory and put back to disk - a read and a write
+cost = 2 * number of pages to sort
+
+
+If not everythinng can fit in memory:
+
+then we merge phase will sort the data divided up and merge the answer
+
+a sort is expensive
+
+****** Duplication elimination (distinct)
+
+- Sort
+- At the last stage of the merge step, eliminate duplication
+- No additional cost with the sorting in respect to io
+
+Use distinct carefully.. is expensive
+
+****** Sort-base projection
+
+***** Access methods
+- Table scan
+- Index scan
+
+***** Computing selection
+applying a filter on the tuples in the relation
+
+might be able to leverage an index
+
+
+
+
+
+
+
+***** Choosing an access path
+
+Selectivity of an access path : number of pages retrieved using that path
+
+System will choose path with lowest selectivity
+
+****** Computing joins
+
+join algorithm is crucial
+
+worst case is : n * m     (n number of tuples in R1, m number of tuples in R2)
+
+******* Block nested loop (expensive)
+(block nested loop, does it for each page)
+
+Which one of the relations is the other or inner loop matters if you don't have enough memory
+(it matters for the buffer)
+
+Depend on the size of the buffer
+and the buffer replacement policy
+
+      big             small
+[ ][ ][ ][ ][ ]   |   [ ][ ]
+
+------------------------------
+
+   [ ][ ][ ]   (buffer)
+
+
+Big is the outer, and small is the inner.. 
+
+Two of the buffer is used for the small, and the last is for the current page in the big
+
+If the inner fits in the memory, the io will be the sum of the pages of the relations
+
+Solution:
+
+!! -> Fit the inner in memory
+
+The smaller is the inner, the same pages will be hit the most times, which will cause them to stay in memory
+******* Index nested loop (good)
+
+
+uses an index to find the relations
+
+Quite efficient
+
+Some systems create the index on the fly, because its still faster than the block nested loop
+
+******* Hash join (good on few matching)
+******* Sort merge join (expensive, unless the relations already is sorted)
+Sort on the joining attributes on each relation and merge them
+
+If you hae a clustered index, then its already sorted, then you just need the sort-merge
+
+then its actually the cheapest join
+
+
+
+
+
+
+
+
+
+
+
+****** Query Representation
+ - Query tree (more powerfull)
+ - Query graph
+
+****** Query Optimization
+Ideally: Finding the best plan
+Practically: Avoid the worst
+
+Two main issues
+ - What plans can be chosen
+ - How is the plan executed
+   - Algorithm
+   - How is the plan estimated

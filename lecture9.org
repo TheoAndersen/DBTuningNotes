@@ -1,0 +1,66 @@
+* Lecture 9 - Index Tuning - 10 April
+
+** Assignment 2
+*** Part 1
+Throughput.. the script will tell you the throughput from the inserts, 
+and you can use some sort of benchmarking tool to measure a reference (mb/s)
+
+Buffer pool, log buffer pool are two seperate things
+
+if your buffer is too small then with small insertions, the buffer will eventually be full.
+(if will start overwriting 'victims' in the buffer pool)
+
+Its hard to make sure that the buffer is cold etc.
+
+How does page size impact insertion performance (how?).
+the larger the page size, the more rows can be written for each page.
+
+when you write the pages are written to the buffer (disk async).
+Distingish between memory pressure (buffer is full, it has to write to disk).
+the larger the page, the more you have to write.
+
+When the buffer isn't full we only write to buffer (disk is async written, when needed)
+
+Larger pages make reads faster but writes slightly slower.
+
+*** Last question about scanning is faster than nonclustering
+-- answered later in the lecture ... and i don't think it was :S
+
+** Index Tuning Knobs
+It costs to maintain an index
+
+Remember the different types of queries (lecture8)
+
+*** Index data structure - Data
+
+**** Clustered Index
+Dictates how data is organized on disk.
+
+Whats good about the clustered index:
+ - Range Queries are good (the data will be sequential on disc - sequential read is faster)
+ - Multipoint Queries are good (The search-key is not on the primary key)
+
+***** Sparse Index
+The leafs on the index Only points to a page, not to the rows
+Stores fewer pointers than a dense index
+
+***** Dense Index
+The leafs on the index points to each row.
+  
+**** Non-Clustered Index
+System might be able to answer a query without using the leafs (to the data)
+Non-Clustered Index is always random-io's
+Good if each query retrieves significantly fewer records than there are pages in the table
+
+***** Scan is sometimes faster than non-clustered
+Range query is faster scanned if the query retrieves more than x % of the table.
+(10 years ago it was 10%, now its propably smaller)
+
+*** Search key
+*** Size of key
+*** Clustered/non-clustered/no index
+*** Covering
+If the query only contains attributes, which are the keys of the index, 
+then you have the data in the index, and you don't have to go to the table.
+
+Covering is how much of the data the index covers

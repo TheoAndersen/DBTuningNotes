@@ -1,0 +1,66 @@
+* Database Tuning I - lecture 2  7/2-2012
+
+** How do we tune this query? (Select * from r where r.a > 5)
+A: You need to find the problem first... 
+If you don't know why the query is running slow, you'r almost certainly tuning the wrong thing..
+
+ 
+
+** What is the problem?
+95% of dba's try what usually work.. they don't know whats wrong (puts in more hardware...etc)
+
+Step 1: Hypothisize on what the problem might be? (you have to have a global understanding of the system)
+Step 2: What could be a fix to the problelm
+Step 3: Experiment and see if it fixed it
+
+Change a query is positive for the query, and dosen't effect other things
+Change an index and you do something positive for some queries, and negative for others
+
+
+
+
+
+
+** TODO Try to use dtrace etc.. to see what your system is doing
+Downloading
+Malware 
+etc.. :)
+
+** 3 Mandatory assignments (not graded, but affects the final grade 2/3)
+
+** Written exam -- based on the mandetory assignments, exercices and lectures
+2/3 of the grade is based on the mandatory assignments..
+
+** 3 mandatory Assignments
+Tell about the setup.. everyone is different..
+Random io's can be measured.. if you think theres a lot of random io's... you can measure it..
+
+** Throughput isn't the opposite of responsetime.. as the systems are running parallel
+Count the number of IO's.. number of data.. and divide by total time..
+
+** Experiments are very time consuming...
+Going to spend a lot of time doing nothing
+
+** query optimization
+*** Understanding excecution plans (be able to see if the sql statements are being interpreted correctly)
+
+** Time Spent Model instead of Resource Consumption Model (which is in the book, chapter 7)
+:( --> RCM is nice on paper but is impossible to have that overview
+
+:) --> STM is much more practical...
+
+** TODO DTrace 
+- finds systemwide indicators which you can tie to functions...
+- Designed for monitoring the performance of systems in production
+Probes: Points of measurement
+
+** Observe IO's to the disc.. 
+
+** Time Spent Model "Where does the time go?"
+ - How much time is spent executing, how much time waiting?
+ - Either your query is waiting to much or it is waiting too much
+
+** TODO Cary Mi.. oracle performance tuning..(Klaus?)
+
+** TODO Macos iosnoop
+

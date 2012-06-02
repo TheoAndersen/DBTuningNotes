@@ -1,0 +1,78 @@
+* Lecture 10 - 17 April 2012
+
+** Assignment 2 - Question 1B - Has different ways of doing it
+
+Do it with one thread, if you haven't done it yet. (no concurrency...)
+
+Be clear what you espect to measure.. to see.. 
+
+x
+
+** Schema Tuning
+
+*** Database parts
+**** Schema 
+Is a collection of relation schema's, and constaints
+
+**** Relation
+RelationName and a set of attributes (a list of attributes)
+Each attribute has a name and a type
+
+**** Relation instanace
+is a set of tuples that match the attributes in relation R
+
+
+*** Database Modelling - Some schema are better than others
+Database modelling
+
+**** Functional depenencies
+Et sæt af attributter hører til en enkel attribute i same relation
+
+Man samler de attributter som hører til en enkelt attribut (som navn, addresse hører til person_id)
+
+**** Normalized
+Hvis alle funcional dependencies, hører til det samme key (kan godt være sammensat), så er den normaliseret...
+
+The can be several keys in a relation(table) but there always is a super-key (primær nøgle)
+
+
+**** Practical Schema Design
+Identify Entities (becomes an relation)
+Each entity has attributes
+  - Attributes cannot have attributes on is own (is it really an entity?)
+  - Each entity associated with an attribute must functionaly determine that attribute
+
+**** Denormalization
+Common ways to denormalize the relations
+
+***** Vertical Partitioning
+Storing parts of the same functional dependeny in different tables (with the same key in each table).
+Splitting a normalized relation in multiple normalized relations
+
+(AccountID, balance, Address)
+or
+(accountId, balance)
+(accountId, address)
+
+You can use this to push a rarely requested attribute out in another table.
+Or if an attribute is really large etc.
+
+So it depends on the access patterns (do you always request all attributes, or seperate parts?)
+
+[This is the whole point of column stores (focusses on OLAP - OnLine Analytical Processing]
+
+***** Vertical Antipartitioning
+TRade of between query being slow and updates easy, or updates being complex and slow and queries being easy.
+
+(example is to complex to write here)
+
+***** Tuning Denormalization
+Violating normalization for the sake of performance
+
+Basically it can be "replace a join with lookup", or "replace a lookup with join"
+
+example: Make an update do a bit more work, to make the query easier
+
+
+
+

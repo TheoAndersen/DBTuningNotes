@@ -1,0 +1,151 @@
+Lecture 12 - 1 Maj 2012
+-----------------------
+
+* Assisgnment 3 (posted at the end of this class)
+
+* DB Optimizer 
+Tries not to find the fastest execution plan, but avoids the slowest
+
+
+* Query Optimizing
+
+Rewriting a query to be faster is good, cause it has no drawbacks - most local fix you can, no inteferrence with the rest of the system
+
+** Query Monitoring
+How to indentify a slow query:
+ - Response time
+ - Too many disc accesses
+ - Query plan fails to use the promising indexes
+
+** Query Rewriting Techniques
+ - Index usage
+ - Distinct elimination (sort is expensive)
+ - (Correlated) subqueries (maybe use a temp-table instead)
+ - Use of temporaries
+ - Join conditions
+ - Use of having
+ - Use of views
+ - Materialized views
+
+*** Type mismatch
+If theres a type mismatch on a join, the DB might not select the correct index
+
+*** Eliminating distinct
+Reaching:
+  A table is priviliged, if its key is projected out
+  A table reaches another table, if its joined on equality by its key field
+  A table can reach another table through another (A reaches B which reaches C => A reaches C)
+
+Distinct is unnecessary if
+ - All tables are priviliged
+or 
+ - All unpriviliged tables reaches a priviliged table
+
+*** Types of nested queries
+ - Uncorrelated subqueries with aggregates
+ - Uncorrelated subqueries without aggregates
+ - Correlated subquery with aggregates
+ - Correlated subquery without aggregates
+
+A subquery is Correlated is when a tuple from the outer query is used in the inner query
+
+*** Rewriting uncorrelated subqueries without aggregates
+
+ex: select ssnum from employee where dept in (select dept from tech)
+
+This is a stupid query and should use a join:
+
+->: select ssnum from employee, tech where employe.dept = tech.dept
+
+*** Rewriting of correlated subqueries
+
+THe subquery is computed on every row..
+
+solution, create a tempory table for the subquery
+so you break it up into two queries
+1. Insert into temp
+2. select joining from the temp
+
+pro:
+ - You give the optimizer options because it might not see the correlated subquery as a join (creating a costly nested loop)
+ - So now you tell it to join as it wants
+con:
+ - Theres no index on temp (you could create one)
+ - Space in memory for the temporary table
+
+=Sql Server can figure out how to optimize the correlated subquery... Oracle and DB2 had difficulties with it (old DB versions)=
+
+*** Abuse of temporaries
+
+When you use a temporary table you are tell the optimizer what to do (you should create a temporary and then use it)
+Can allow to use a more efficient join-method, but it can be abused.
+
+When temporaries you are enforcing the order of selections (you assume you know more than the optimizer does).
+
+But you might not know more than the optimizer.
+
+*** Join conditions
+
+- Joins on clustering indexes is good (it will be a sort merge, and the sort is free on a clustered index)
+ (if you can define a clustered index on the temporary table (so that it can do the sort fast))
+- Joins on numerical is faster than string
+
+*** Use of Having (group by)
+Select
+From
+Where
+Group by        --> partitioning the result set by the group (typically one tuple per group) + you project out the attribute you group by
+Having          --> specifies conditions on the groups (filter out the groups by some condition)
+
+=Avoid using having when 'where' is enough=
+
+=You don't need having on the attribute you group on.=
+
+You can end up using more data than you need
+
+*** Use of Views
+Optimizers expand the view, when identifying the query blocks to be optimized.
+
+But make sure you know what the query is being expanded to - =your point-query might be a join=
+
+*** Aggregate maintenance
+
+Ordernum (ordernum)
+Item (ordernum, price)
+
+When finding the total price for all orders, we do the same old work on summing up the old order total price.
+
+Solution - make extra tables and make sure the updates keep the total price in check
+
+*** Materialized view (Oracle only?)
+A view that is materialized, so that the db server stores the data for the view.
+
+Whenever there is an update on the data of the view, we have to update the view.
+
+The system will rewrite a query if it fits the materialized view..
+
+** Triggers
+A Stored procedure that executes as the result of an event
+
+Remember triggers by ECA
+Event
+Condition 
+Action
+
+Can be used for creating your own materialized view
+
+Triggers can maintain integration constraints (referential integrity)
+or aggregate maintenance
+
+
+Triggers can be impossible to maintain... (they can update the same thing that triggers a new trigger)
+
+
+
+
+
+
+
+
+
+

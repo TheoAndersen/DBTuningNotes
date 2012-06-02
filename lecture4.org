@@ -1,0 +1,137 @@
+* Lecture 4 -  21 feb 2012
+
+** two phase locking (sumup)
+ - Take all locks at the beginning of a transaction, and first release them in the end (on commit)
+Benifits.. guarantees a serial schedule
+
+** Conflicts (sumup)
+*** Definition of a conflict
+Two operations on the same data-item and one of them is a write
+
+*** Three types of conflicts between concurrent transactions
+1) W1 W2 - Lost update (last write wins)
+2) W1 R2 - Dirty read / Uncommitted read (T1 has not commit yet while T2 is reading the item - T2 can read something which is not committed)
+3) R1 W2 R1 - Unrepeatable read (while reading the same value twice in the same T you get a diffent value)
+(The last one could be the phantom problem, problem with locking not seeing an insertion, not locking on future values)
+
+To guarantee seriability, you have to avoid the three types of conflicts.. You get that with 2-phase locking.
+But two phase locking dosen't avoid the phantom problem!
+(You can rely on predicate locking, table locking or with an index next-key locking (not explained yet))
+
+** Lock tuning
+*** All the previous about locking didn't take performance into account..
+*** [ Trade off between concurrency and performance ]
+*** Performance goals
+ - Reduce blokcing (the more conflicts, the more waiting)
+ - Avoid deadlocks
+
+*** Ideal transaction (smaller, fewer locks, shorter time)
+- Reduce the number of conflicts - Aquire few locks, 
+- Favor shared locks over exclusive locks
+- Row over table locks where you can (finest granularity of the locks as possible)
+- Hold locks for a short time
+
+** Intention locks..
+** Lock compatability
+When you go to another system, you have to go find out how the different lock modes interact (Lock compatabilty table in db2)
+
+** Lock upgrade
+You read with a select, and then write with an update
+(takes a read lock, and then upgrade to an exclusive lock)
+
+Upgrade row to a table lock when we get to a certain number of row locks.. 
+Can cause deadlock when upgrading, as another T might have a row lock and waiting on a row lock on the large transactio
+Db2 does lock upgrading, but oracle never does it.
+
+** Isolation levels 
+On db2 we don't have an isolation level per default which guarantees serializability (its too slow)
+
+4 Isolation levels (Standardized.. called something else in db2)
+
+ - Read uncommitted (No lost update)                                  lowest level
+ - Read committed (No dirty read) standard on db2, sql server)
+ - Repeatable read (no unrepeatable reads, strict two phase locking)
+ - Serializable (also avoids phantoms)                                highest level of isolation (slowest)
+
+Oracle uses snapshot isolation. Everybody should, everybody will support it..
+
+*** Snapshot isolation
+Every transaction executes on the data items that was committed when the transaction started
+
+I see the state of the database when i started.. i don't care unless i start to write
+only conflicts are W-W (two writes).. reads will not conflict with writes
+
+Wayy less conflicts with snapshot isolation than any other
+
+Not serializable even though oracle claims so (but almost is)
+
+DB2 has snapshot isolation. In the assignment we will try to find out the performance impact of this
+
+*** Strange fact about performance results on oracle.. you arent allowed to publish them (= no y axis values)
+
+** Sacrificing Isolation for Performance
+Dont hold locks during screen interaction.. duuh..:S
+(Seats on an airplane problem - don't lock a seat in db while a passenger chooses seats and finishes the buy)
+
+** Transaction chopping
+Chopping up transactions so that i reduce the scope of the transcation, and reduce conflicts
+
+When chopping transactions you remove some of the responsitility from the DB back to the application
+to gain performance
+
+*** TODO Look at the algorithm for transaction chopping
+
+*** Excecution rules (that the application has to ensure, now the DB dosen't do it)
+- Excecute by the same order of the transaction Piece1 -> Piece2 ..
+- If a piece is aborted because of a conflict, it will be resubmitted until it commits.
+- If a pience is aborted becuase of an abort, no other pieces for that transaction will excecute
+
+- Theres no problem if theres either no abort commands, or if the abort commands are in the first piece..
+
+*** TODO Chopping graph
+(another kind of serialization graph)
+Correct chopping
+(S)ibling and (C)onclict.. 
+
+Transaction chopping moves problems from the DB over the application layer.
+But its not free.. you have to handle it in the application layer.
+And you have to know which kinds of operations acess the data
+
+*** Transaction chopping exercise Example
+
+Ascii verison was impossible :( .... wait.. no... it fit.!.... :O
+
+Take it one transaction at a time..
+
+So there has to be no S-C cycles to be able to chop the transaction
+ 
+
+                                                         RW3(E) --S-- RW3(C)
+                                                       /   |             |
+                                                     c     c             |
+                                                    /      |             |
+                                                   /     R5(E)           |
+                                                  |                      |
+            R4(F)                                 |                      c
+	     |                                    |                      |
+	     c                                    |                      |
+             |                                    |                      |
+ R6(A) --S-- R6(F) --S-- R6(D) --S-- R6(B) --S-- R6(e) --S-- R6(G) --S-- R6(C)
+ |                        |           /
+ C                        |           |
+ |                        |          /
+RW1(A) --S-- RW1(B)       |         |
+            / |           |         /
+           /  C           c        c
+          /   |           |       /
+         /  RW2(B) -c- RW2(d)     /
+         |      \               /
+          \------\--------------/
+
+
+T1 - no
+t2 - no
+t3 - no
+t4 - only one
+t5 - only one
+t6 - R6(a) R6(F) R6(D) R6(B),    R6(6), R6(G), R6(C)

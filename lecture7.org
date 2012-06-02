@@ -1,0 +1,183 @@
+* Lecture 7 - OS and Hardware Tuning -  20 marts
+
+** Assignment 1 Questions
+
+*** Yes, you can use the printed timings of the response time..
+The safe thing is to use the applicant response time. 
+If you take the database time you have to understand what you take
+
+- all the timings in the book is spent on the timing.
+
+*** It could be interesting to see how much time is spent on the server vs application?
+
+*** see locks and waits, while its running could be interesting
+db2pd -db tuning -locks wait showlocks
+
+*** Rememter to write about the setup
+
+
+
+** OS
+App
+----
+DBMS
+---- 
+OS
+-- 
+HW
+** Hardware tuning
+HW tuning is the last step in tuning.. most times you find that the hardware 
+you have actually is sufficient..
+
+** Hardware - The three main hardware abstractions
+*** Communication
+Main abstraction: Send and Recieve
+
+*** Processor
+Main abstraction: Thread
+
+now: dual-core, single-socket:
+Multiple cores within a socket
+
+Newer generation - dual-socket:
+Two sockets in the same processor, in each socket you have multpiple cores..
+
+**** Why do you need the Threads abstraction?
+If you only have one thread you will have to wait on io..etc..
+You will have to wait on blocked resources..
+If its threaded, then it can do something else while waiting.
+
+- It's about optimising resource utilization
+
+**** Context switching
+When making another thread run on the processor, the context is changed/switched so that the other runs
+
+**** Saturating hardware threads (using them as much as possible)
+Is an issue..
+
+**** Faster disks (SSD)
+Then we get tuning problems, cause now the IO isnt the bottleneck, but the DBMS becomes.
+Because it isn't tuned to use the IO enough... it spared it before...
+
+*** Memory
+Abstraction: Read and Write
+
+Primary Storage (RAM)
+Secondary Storage (Disk)
+Cache
+Tertiary storage (Tape)
+
+Tertiary storage is data that you dont use often, access expensive but cheap.
+It was tape earlier.. but not used much anymore.. 
+
+Disk is becomming tertiary storage, and flash is becoming secondary storage
+
+**** Cache
+
+        /--> Space
+Locality
+        \--> Time
+
+**** Where is L1 cache attached?
+(is the cache closest to the interpreter)
+Closest to the Hardware thread. but its attached to the CORE (because the HWTheads want to share the cache)
+
+HWThread: It only needs a few registers.. for what it needs to execute, but it dosen't need L1..
+It can access it from there.
+
+HWThread can have its own cache, or it can share a L1 cache..
+
+Own cahce is typical smaller... and shared larger...
+
+**** L2
+
+**** L3
+
+**** If not in these three then its in RAM
+
+*** Difference between memory: Read/Write and communication: send/recieve
+Write data.. send message... 
+a sent message is intepreted (the memory abstractio dosen't have this)
+YOu dont decide whats done with the message you sent
+In read/write you decide what happens.. it writes it..
+
+send/recieve is a much larger abstraction
+
+
+
+** Threads
+
+Fiber: Is a thread on top of an operating system thread.
+
+On the database-level, there is another thread-abstraction.
+Because the DBMS will know which of these 'threads' it can map on an OS-Thread
+
+ex: Query threads - one thread per query
+
+*** Priority Inversion
+A higher scheduled thread can be forced to wait on a lock, because a lower prioritized 
+thread has a lock on the data.
+
+Solutions:
+ -  everybody on the same level of priority..
+ -> raise the level of priority on the lower priority Thread, 
+    when it gets the lock and somebody waits. 
+    So it escalates the lower priory thread, to get rid of the lock
+
+Priority Escelation
+
+*** Multiprogramming level
+instead of one thread pr. query, then have multiple threads per query.
+
+- Data is in memory: increasing the number of threads reduces throughput
+  (switches, synchronization)
+
+- Data is on disk: Increasing the number of threads increases throughput for random access.
+  (list prefetching mechanism in db2)
+  Thoughput is overall increased, as the prefetching thing, counterweighs the switches/synch
+
+If you have a few io's within a given range, then DB2 gets the whole range.
+
+** DAtabase buffer
+
+warm or cold buffer
+
+cold, when you have to do io's
+warm when its already there.
+
+Second time the data is in the cache
+
+If the request can fit the buffer.. its oki.. 
+but it the buffers smaller, then it has to use getRecentlyUsed, and get the data in there.
+but it dosen't really matter if it just smaller or a lot smaller..
+
+** Prefetching
+Instead of getting io's you ask them, it takes a bit more, in case you need it
+
+** Usage factor
+How much of a page you fill with rows
+100% means each page is packed.
+
+An update on a 100% means we have to reorganize something, because there isn't room.
+
+IF we have less pages, we have less io's (better performance)
+
+** RAID Levels
+Redundant Array of Inexpensive Disks
+
+JBOD    : Just a Bunch Of Disks
+RAID 0  : Striping (slice a file up, and place it on the disks.. distributed file)
+RAID 1  : Mirroring
+RAID 10 : Mirroring & Striping
+RAID 5  : One of the striped disks is Parity (floating parity)
+          (if any of the four disks fails, you can reconstruct it from the other)
+
+** Point queries
+*** Point query
+You know you have one answer back (one tuple)
+
+*** Multipoint query
+Condition on a non-primary key... (you get a set of tuples back)
+
+
+

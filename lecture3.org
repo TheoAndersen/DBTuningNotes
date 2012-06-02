@@ -1,0 +1,90 @@
+* Lecture 3 - Database tuning 14/feb 2012
+
+** Locks
+
+*** How to define a conflict
+To operations focus on the same item, and one of them is a write
+
+*** Scheduling transactions
+Scheduler takes n transaction, which the scheduler module schedules operations from.
+
+Simplpest form for scheduling to make sure theres no conflicts are
+ - Schedule them sequentially -- one at a time, after each other.. (t1, t2, t3) 
+     (slooow latency, unused cpu, io.. etc. while one transaction is only using one part)  unsused while transaction
+ - You want to interleave the transactions.. to optimize performance..
+
+Interleaved excecution will look like the sequential one, if the excecution is serializable
+
+*** Concurrency control
+Is about generating a schedule
+
+**** Serializability
+Operations commute if the do not conflict 
+(commute means that the scheduler can run them in either order.. p1, p2 and p2, p1)
+Schedule 1 is equal to schedule 2 if i can make 1 the same and 2 by commuting operations
+Schedule tries to commute operations to make every transaction run after each other..
+
+**** Serialization Graph..
+Transactions is nodes, and conflits are directed edges between.
+Theorem: "A schedule is conflict serializable if and only if its serialization graph has no cycles"
+A cycle is a set of conflicts which cannot be resolved
+
+R1(x), W2(x), R2(y) w1(y)
+
+    /--> T2
+  T1 <--/
+
+**** Optimiztic or Pessimistic concurrency control
+Relational databases use the pessimistic strategy
+
+*** Locks
+Used by the concurrency control to make conflicts explicit
+Shared (read) and Exclusive (write) locks
+Locking does not guarantee serializability (lock is per operation, not transaction)
+(you can still have a non serializable schedule)
+
+**** Locking protocol
+(How to take and release locks)
+ - Two-Phase locking (all locks are taken in the beginning of the transaction and first released at the very end)
+
+**** Locking Implementation
+Lock set, write sert..
+
+IN sql server its in a single server (possibly old sql server version)
+Oracle its distributed over the data pages (current lock) and another place to (wanted locks)
+
+**** Latch and Lock
+LAtch is a mutex (mutual excecution, low level construct)
+Lock for concurrency control (high level.. 32 bytes.. large)
+
+**** What to lock
+- Table
+(- Predicate) .. <-- expensive
+- Rows
+
+Intention locks, are to show that a lock on a row, is a part lock on a table.. 
+You cant take an exclusive lock on a table, if theres a lock on a row already
+s Shared
+x exclusive
+ix intention exclusive
+is intention shared
+
+***** Phantom
+
+Table locking prevents phantoms but row locking does not (an insert wouldnt be locked by an existing row lock, it dosen't know the future)
+
+- Predicate lock..
+
+- [ ] look at how DB2 takes locks (and sql server..)
+
+****** Deadlock
+Locking makes a risc for deadlock..
+Solution is to abort one of the transactions (Victim)
+
+We avoid deadlocks by putting using the database in a common order..
+Put a total order on the tuples of a relation
+
+Index... clustered index... will order the tuples in the order of the index key
+Always access the rows in the order of the clustered index, will avoid deadlocks..
+
+

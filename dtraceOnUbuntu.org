@@ -1,0 +1,58 @@
+Installing DTrace on Ubunbu
+
+* install in this order
+
+apt-get install git (or is it git-core)
+
+mkdir dtraceGitHub
+cd dtraceGitHub
+git clone https://github.com/dtrace4linux/linux.git
+
+
+
+- as sdt1 user, type
+su (the root password is tuning)
+
+- as su, type
+apt-get update
+apt-get install binutils-dev
+apt-get install libdw-dev
+wget ftp://crisp.dyndns-server.com/pub/release/website/dtrace/dtrace-20110120.tar.bz2
+bunzip2 < dtrace-20110120.tar.bz2 | tar xvf -
+apt-get install bison
+apt-get install flex
+apt-get install zlib1g-dev
+apt-get install libelf-dev
+cd dtrace-20110120
+make all
+make install
+make load
+
+
+
+=================================================================
+=== You need /usr/lib/libdwarf.a and /usr/lib/libbfd.a installed to build.
+=== 
+=== apt-get install binutils-dev
+=== apt-get install libdw-dev
+=== 
+=== Without these, we will not build ctfconvert (needed for 
+=== SDT structure definitions).
+=================================================================
+
+NOTE: The build is complete, but build/ctfconvert is not available.
+      This means you will get run time errors from the io.d and sched.d files
+      due to undefined kernel structure definitions. Simply delete or rename
+      these files until a fix can be put in place to handle older
+      distros which do not have the required libdwarf dependencies.
+
+      (Typical error is references to undefined struct definitions such
+      as dtrace_cpu_t).
+
+This is why you cant use the io provider..
+ap
+
+
+apt-get install libdwarf-dev
+
+db2pd -db tuning -locks wait showlocks

@@ -1,0 +1,187 @@
+* Lecture 8 - Indexes - 27 march
+
+** What is an index?
+
+- The last few pages of a phonebook is an index
+
+- Seperate Datastructure Used to speedup lookup / queries (with a key)
+
+** Primary index
+Dictates how data is organized
+
+** Different kinds of queries
+
+*** Point query
+  - returns only a scalar value
+  - One of the conditions is a equality condition on the primarykey
+    (so your sure you only get a single scalar value out)
+   - Identifies one row in a relation
+
+*** Multipoint query
+  - Equality condition on a non-key attribute
+  - One or n attributes
+ 
+*** Range query
+  - Get one or many tuples.. ( not equality but < )
+
+*** Prefix match query
+  - Several attributes and key value for only some of them
+
+*** Extremal query
+  - MAx min
+
+*** Grouping query
+*** Ordering query
+*** join query
+
+** Accessing
+
+*** Scan
+A scan is sequential acces.. and the disc dosen't have to seek. just read one after another
+So scan is actually faster than a random access to a specific point.
+
+Scan is actually hard to beat... (??...)
+
+So a heap-file is a usefull datastructure for this
+
+*** Selectivity
+
+Selectivity =  (# tuples selected) / (# tuples total)
+
+** Heap files
+
+Every tuple in the relation is appended
+
+unordered - append the tuples as they come
+
+** Index
+data structure that supportes efficient access to data
+makes sure you only search a subset of the records..
+
+*** Search key
+the search key on which the index is defined
+
+Sequence of attributes (one or several)... not a list, but a sequence (first attribute, second attribute...etc)
+
+**** Sequential key
+value is related to the insertion order (counter or timestamp)
+**** unsequential
+value is unrelated to insertion order (social security number)
+
+*** Data structures
+INdex can be regarded as a tree (draws triangle)
+
+in general the root typically is in memory but the leaves might be on disk
+
+Performance has to do with when you go past memory to disk (has to do io's)
+
+**** tree as a triangle
+root is on top of the triangle
+internal is inside the triangle
+leaves is on the lowerest side of the triangle
+fanout is how wide the triangle is
+      
+      _ root
+     / \
+    /   \
+   /  i  \  <--- internal
+  /_______\
+
+       ^
+       |
+     leaves
+
+
+*** Different datastructures for indexes
+Binary tree (fanout is always 2)  X not good for DB Systems
+Hash table
+Balanced tree (B-tree)
+R-Tree
+Bitmap (for a search key, we have different values on the rows (discrete values like an enumeration) - and alot of tuples as columns) (som et kvadratisk lookup ting)
+
+
+*** B+ tree
+Its called a b+ tree because we only have pointers to the relation in the leaves (bottom level).. internal levels are just for navigation
+
+Balanced tree, whoose leaves contains a sequence of a key-pointer of pairs.
+leaves are key-pointer pairs
+internal nodes and inbetween leaves we have points (for navigating the b+tree)
+the pointers we have in the leaves points to a part in the heap file (to a tuple) .. could be a recordId
+
+(assumption is a that data is in a heap file, with an index on top)
+
+to travers we see if its lower or higher than: 1st the root.. then the internal nodes (can be higher lower or in between [80-100] ex)
+
+if an internal note has more than one value [80-100] then we have lower, in-bewteen and higher to the next level.. if only one bound [80] then we only have lower or lower
+
+**** Internal nodes
+key-point  a key (search key) + pointer to another node
+
+**** Leave nodes
+key and pointer out of the index to the relation
+
+from the nature of the b+ tree, the leaves will be sorted
+
+**** To keep the balance, we might have to reorganize the tree
+
+**** B+ tree performance
+Minize the number of levels (higher the higher number of io's you get)
+Size of key
+
+Online (on insert and update) 
+and Offline reorganizing (when you tell it to reorganize)
+
+keylength influenced fanout
+
+Choose a small key when creating an index
+
+**** B+ tree locking
+Rely on indexes to provide some form of range locking
+
+If you don't have some kind of way of identifying a subset, then you have to take a table lock.
+
+So even though you have very small tables, it makes sense to create an index on them - because it will help the concurrency control with the locking
+
+When you take a lock on a value in an index, you take a lock on the entire range.
+(next key locking)
+A lock on a key, is a lock on that key and the next key in the index
+
+**** ! -> Defining indexes is not only good for table acces performance, but also for range locks (next key locking)
+
+*** Hash index
+Stores key-value paires based on a pseudo-randomizing function called a hash-function
+
+good for point queries + possible multipoint queries
+
+bad for range queriese
+
+*** Clustered / Non clustered index
+
+**** Clustered (primary index) - determines how data is stored
+data is stored in how the index defines
+
+Data might be a heap file, but the position of the tuples depend on the search-key
+
+The heap file is sorted based on the serach key in the index
+
+(high overhead in case of insertion)
+
+Sequential primary keys are good - always insert in the end (bad for concurrenty, but good for inserting .. in the end is easy)
+
+***** Only one clustered index per table - you can only have one way of storing the data... 
+If you want two you must have data duplicated
+
+**** Non-clustered index (Secondary index)
+Not organizing how data is located on disk
+
+The index leaves will point to the data.. but unordered... the clustered will be ordered (the data follows the index value sorting). in non-clustered is dosen't
+
+There can be several non-clustered indexes pr table
+
+
+*** Primary key - unique index
+
+*** Foreign key index
+This can be beneficial for deleting a row, in which another table has a foreign key to.
+
+because a deletion must ensure that no foreign key to that primary key exists.. which might mean a scan on the other table for possible foreign keys.

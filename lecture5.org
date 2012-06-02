@@ -1,0 +1,272 @@
+* Lecture 5 - 6 marts 2012
+
+Teacher only explains the academic part.. we have to work with the
+practical parts our self.. and that takes time.
+
+** Lecture 6 will show a solution to exercise 2
+
+** There is a teaching aid, but he hasen't introduced him yet
+(In his experience, we can't use the teaching aid alot).
+
+** Some certification, after the 20th week of june :S db2? (3rd week of june)
+ - 2 days (a weekend perhaps?)
+ - A Certification (entry certification)
+
+** Assignment 1
+
+
+** Transaction is a group of operation where the database guarantees some properties
+ - Isolation
+ - Atomicity and Durability
+   (Atomicity: either everything succedes, or nothing succedes)
+   (Durability: the effect of committed transactions are permanent, 
+                even if a failiure
+                the effect of non-commited transactions are NOT permanent, 
+                even if a failure)
+
+Durability espects the HDD to be stable.. IT is not in Real life... 
+so make sure you backup or clone or something
+
+** Typical abort types
+ - User cancels operation
+ - transaction (deferred constraint check)
+ - System (deadlock, lack of resources)
+
+** RAM and Secondary storage
+HDD - Sequential access is much faster than random access (not sdd)
+Update in place is ok
+
+RAM is fast, but in case of errors we loose it.
+
+   RAM [Database buffer]              (unstable storage)
+   ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+   Secondary storage (HDD)            (Stable storage)
+
+** Buffer managent
+
+Buffer pool
+
+TRansaction changes the data in the buffer
+
+Steal - Buffer is getting full, a dirty page is written to disc
+        (written back where it came from)
+/
+NoSteal - Dirty page is only written back if the transaction that wrote
+          the page has committed
+
+Force - We force the transaction to disc
+/
+NoForce - We don't force the transaction to disc
+
+*** What should we choose?
+NoSteal > Force ? (the most intuitive, and secure method, which implements durabilty)
+
+But: Every system implements: >>  Steal / NoForce <<
+
+If you dont implement steal and you run out of memory, everything halts.. You WANT to steal.. 
+
+And we use NoForce.. i think it was because its better to writer/read in batches..(HDD performance)
+
+*** In Case of failure
+Steal => UNDO
+NoForce => REDO
+
+** Logging
+
+To be able to UNDO and REDO.. we need?
+
+*** Before and After -images
+
+Whenever you have a change. you have a Before-image and an AFter-image
+
+Before-image  ....>  Operation ....> After-image
+
+want to undo? -> go to the before image
+want to redo? -> go to the after image
+
+*** How do we keep track of Before and After -images
+We keep them on secondary storage (affects performance)
+
+Log is on the secondary storage... contains the Before and After -images 
+
+(oracle seperate before and after images, sql-server and db2 keeps them together)
+
+** Database State
+
+Database State = Current state of data disks + log
+
+** Log
+Sequential of records (sequential file)
+- modified by appending (no updating)
+
+Contains information from which database can be reconstructed
+
+(HDD: remember that sequential write is way faster than random)
+
+Each modification is appended to the log
+Contains
+- Identify of the data item..
+- Before image
+- After image
+..ect..
+
+** Where can the system find out if the transaction was committed or not?
+Q?
+Where can the system find out if the transaction was commited or not
+A: In the log
+The system will log each transaction that commits
+(the after-image can be a steal..)
+
+** LSN:  Log Sequence Number
+LSN is a logical timestamp (we know which operation was before which, in respect to the scheduler)
+
+Each database page contains the LSN of the update record describing the most recent update of any item on the page
+
+** Page
+Is an abstraction of a block
+contains data and some additional information (as the LSN of the most recent update)
+
+** How data is written to the log
+
+"The Write-Ahead Logging Protocol"
+------------------------------------
+1. Must force the log record for an update BEFORE the corresponding data page gets to disk.
+(STEAL.)
+2. Must write all log records for a Transaction BEFORE commit
+
+Why:
+WHen you write to the log you know its sequential (fast), but when you write the data it could (mostly is)
+slow
+
+ ( you write the UNDO to the log, before you do the steal)
+
+Whenever theres a commit, the log-record is written to the log, and then the data
+
+*** Database dosen't use the filesystem, but writes directly to disc
+The Filesystem is in the way, it caches whats written - We don't want that with the database.
+Cause when we write to disk we need to be sure its on the disc
+
+Another thing is ram swapping to disk by the OS.. thats a catastrophy.. way to slow...
+
+Another thing is that the harddrive will also cache some of the data that is to be written
+
+Harddrive and RAID controllers, must have batteries, so that they can have time to write the buffer-data to disc 
+in case of a power failure
+
+*** Know where the writes of the database comes from
+It writes to the log, and then more seldom writes data.
+And the writes comes asynchronous... logs donot
+
+
+** Transaction abort using log
+
+Scan the log backwards using 'tid' to identify tranaction update records
+ - Reverse each update using before image
+ - Reversal done in last-in-first-out order
+
+** Oracle Undo og REdo log - Snapshot isolation (Klaus)
+Oracle har en undo og en redo log.
+
+Den har indbygget snapshot isolation ved at reads læser fra undo-loggen (som er formet som et tablespace)
+På den måde kan man altid læse det nyeste data, ligemeget om der er ved at blive skrevet noget eller ej.
+REt smart.. og er indbygget, ikke en ekstra ting.. Men man sætter vel mere vægt på undo-loggen
+Den må meget meget gerne køre hurtigt :)
+
+** Crash Recovery Using Logs
+
+1. Abort all active trsanactions at the time of the crash
+
+   Scan the log backwards.. find active transactions (non committed) and undo them
+   (remember that it writes to the log before it 'commits')
+
+*** Scan must retrace the entire log :(
+Solution: (Sharp Checkpoint)
+Periodically append a checkpoint record.
+Checkpoint contains 'tid' of all active transactions at time of append
+
+When we have all the tid's we can go back and find all the Updates relating to the Transactions
+we need to undo
+
+A backwards scan only goes as far as the last checkpoint, where it can get the last information
+of what it needs to undo.. (without tracing back more)
+
+*** Sharp Checkpoint (normally way to expensive)
+Whenever we have a checkpoint, force all dirty pages from cache to the disk.
+Very expensive.. but makes redo  easier. We don't have to go past this checkpoint when recovering from crash
+
+*** 3 pass recovery algorithm
+pass1: Scan backward to identify active transaction of the time of crash (to backgward to the last chekcpoint)
+pass2: (REDO) Scan forward from CK to most recend record. (use after images to roll the database forward)
+pass3: (UNDO) Scan backwards and undo the before images of all active transactions
+
+issue1: Database pages might have been flushed.. something?.. shit.. (not complete.. this one)
+        Overwriting already done with Redo dosen't break anything.
+issue2: Some update records after CK might belong to an aborted trsaction. These will not be rolled back in pass 3.
+        Treat rollback operations for aborting as ordinary updates and append compensating log records to log
+	(this will make it so that the redo-phase, actually will abort some operations)
+issue3: What if the recovery crashes?
+        Dosen't matter.. Restart recovery pass 2 and pass 3 can be done again and again.. dont corruprt anything, just overwriting images
+
+- Nobody does Sharp Checkpoints.. is way to expensive
+
+*** Fuzzy Checkpoint
+Dosen't stop the system
+
+- Before writing the CK, record the identity of all dirty pages (dont flush them).
+- All recorded pages must be flushed before next checkpoint record is appended to the log buffer
+
+So we buy some time.
+At the sharp checkpoint we write all (flush) at one point in time. 
+With a fuzzy checkpoint we give the system time to write when it wishes too.
+
+But then we need to go back 2 checkpoints when doing recovery. (still uses the 3 pass algorithm)
+
+** Logical Logging (dosent' work, as we cant keep repeating the redo in case of error)
+
+Physical logging can result in multiple update records with large before and after images
+(slow)
+Solution:
+Log the operations and its inverse instead of before and after images.
+(stores the insert..etc..)
+
+*** Problem 1
+They might not be idempotent.. - cant keep replaying them
+Solution: Dont apply the operation in update record i to database item i n page P during pass 2
+if P.LSN > i.
+
+We can't redo what we don't need to redo..
+
+*** Problem 2
+Operations are not atomic
+
+in case of error, we need to know what was done and what not.
+
+Killer!... this is why logical logging dosen't work... 
+We can't know what was done.. and what we need to do.
+
+** Physiological Logging
+Use physical-to-a-page, logical-within-a-page-logging.
+  (store the images)        (store the operations)
+
+So its becomes mini-operations.
+
+So everything is at page level, cause then we can use the logical logging, though only on a page-level.
+
+If you have logical logging across pages, the system cannot ensure atomicity.. therefore its only for a page
+
+** ARIES
+- Steal NoForce
+- 3 Phase crash recovery
+- Fuzzy checkpoints
+- Physiological logging
+
+Developed by one guy :S C. Mohan at IBM Almadan in the early 90's
+
+** Logging in SQL Server
+Textbook approach.. (look at the slides)
+
+** Logging in Oracle
+Using undo-log (in memory) to provide Snapshot Isolation
+
+But can be a problem, because the undo-log takes alot of ram. and it might need to go far back to find it.
+The lock is also on the page itself.
