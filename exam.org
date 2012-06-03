@@ -1,21 +1,22 @@
 
-* DONE Lav en word skabelon og lægge den på nettet
-
-* DONE Logge på ITU udefra
-** [X] Teste om kodeordet virker
-** [X] Se om man kan lægge word-skabelonen op hjemmefra
-
-
 * Emner (skal genopfriskes?)
-** [ ] Tuning the recovery subsystem (2.3.2)
-Det der med at sikre at loggen kører på sekvenielle writes.. for perf.
 ** [ ] Splitting transactions?
-** [ ] Assignment 1 - Isolation Levels - CS and RR
-*** Explain RR
-*** Explain CS
-*** Explain CS with currently committed on (see ass 1)
+** [ ] Asssignment 2 - Reading Writing + Indexes
+*** [ ] Tuning the recovery subsystem (2.3.2)
+Det der med at sikre at loggen kører på sekvenielle writes.. for perf.
 
-* Markere vigtige pointer i Assignments + printe
-** [ ] Markere hvilke dele der ikke er relevant til eksamen (Ass2 1b)
+*** [ ] Query Selectivity and Nonclustered vs. Scan
+** Det der distinct noget
+** Gå lecture noter + eksamensting igennem...
+** Gå assignments igennem og få et overblik over emnerne. (graferne)
 
-* Lav sidste eksamen + se hvordan svarene passer med hans censor svar
+* Alle assignments grafer skal op på github
+
+* Print
+ - De sidste test-eksamener (begge to)
+ - Assignments (alle tre)
+ - Alle lecture noter? (fra github?)
+
+* Ekstra?
+ - Marker alle pensum kapitler, så man ved hvad for nogle der er pensum?
+ - Gå alle pensum kapitler meget hurtigt igennem for at få et overblik?
